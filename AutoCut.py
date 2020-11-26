@@ -12,9 +12,11 @@ def PrepareDirectories(workpath, inputpath, outputpath):
         shutil.rmtree(workpath)
         os.makedirs(workpath)
         os.makedirs(workpath+r'\\splits')
+        os.makedirs(workpath+r'\\ppsplits')
     else:
         os.makedirs(workpath)
         os.makedirs(workpath+r'\\splits')
+        os.makedirs(workpath+r'\\ppsplits')
 
     if not os.path.exists(inputpath):
         os.makedirs(inputpath)
@@ -61,33 +63,72 @@ def gettime(totalseconds):
     result += str(round(totalseconds))+" seconds"
     return result
 
-def findthreshold(bufferduration, limit, offset, data, threshold, ss):
+def findthreshold(bufferduration, limit, offset, data, threshold, ss, step):
     start = 0
     end = 0
     cutlist = []
     
     while start < len(data) - bufferduration - 10:
-        if np.mean(data[start:start+8]) < limit + offset:
+        if np.mean(data[start:start+10]) < limit + offset:
             start = start + 1
             end = start
         else:
             end = start + bufferduration
             while end + threshold < len(data) and np.mean(data[end:end+threshold]) > limit + offset:
-                end = end + 1
+                end = end + step
             cutlist.append([start/ss,(end+threshold)/ss])
             end = end + threshold + 1
             start = end
 
     return cutlist
 
+def Preprocess(vidname, PPthreshold, PPlimit):
+    vidpathname = "input/"+vidname
+    duration, totalframes, fps = getVidInfo(str(vidpathname))
+    subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 tmp/ppaudio.wav',capture_output=True)
+    ss, data = wavfile.read('./tmp/ppaudio.wav')
+    data = np.abs(data)
+    limit = PPlimit
+    print("--Limit is: "+str(limit))
+
+    print("--Analyzing")
+    bufferduration = round(ss)*minduration
+
+    cutlist = findthreshold(bufferduration, limit, offset, data, PPthreshold, ss, 10)
+
+    print("--Number of cuts to be made is: "+str(len(cutlist)))
+    print("--Video will be "+str(perachieved(cutlist, duration)*100)+" percent shorter.")
+    print("--Threshold is: " + str(PPthreshold))
+    print("--Cutting")
+    x = 0
+    while x < len(cutlist):
+        split = "ffmpeg -i "+str(vidpathname)
+        print("----"+str(round(x/len(cutlist)*100)) + " %")
+        while x < len(cutlist) and len(split) < commandlinelength:                                                                          
+            split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast tmp/ppsplits/"+str(x)+".mp4"
+            x = x + 1
+        subprocess.run(split,capture_output=True)
+
+    f = os.listdir("tmp/ppsplits")
+    with open(str(workpath)+"/ppcliplist.txt", "w") as cliplist:
+        for i in range(0, len(f)):
+            cliplist.write("file '"+str(pathlib.Path(__file__).parent.absolute())+"\\tmp\\ppsplits\\"+str(i)+".mp4'\n")
+        cliplist.close()
+
+    print("--Merging...")
+    subprocess.run("ffmpeg -f concat -safe 0 -i "+str(workpath)+"\ppcliplist.txt -c copy tmp/preprocessed.mp4", capture_output=True)
+
 if __name__ == "__main__":
-    PPthresh, PPlimit = 2, 20       #Preprocessing threshold and limit
+    
     offset = 0 #offset of rms limit
-    realthreshold = 0 #lower => more aggressive cutting
     minduration = 2
-    soundlimit = 70
+    soundlimit = 150
     commandlinelength = 5000
     speedup = 1.6
+    threshold = 30
+    thresholdlimit = 120
+    PPthreshold, PPlimit, PPminduration = 3000, soundlimit/2, 5       #Preprocessing threshold and limit
+    Analyzeloud = False
 
     workpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\tmp'
     inputpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\input'
@@ -99,57 +140,70 @@ if __name__ == "__main__":
     for (dirpath, dirnames, filenames) in os.walk(inputpath):
         vidlist.extend(filenames)
 
+    if(Analyzeloud):
+        print(vidlist[0])
+        starttime = input("Start of spoken part(HH:MM:SS.ms): ")
+        durationtime = input("Duration of spoken part(in seconds): ")
+        subprocess.run('ffmpeg -i input/'+vidlist[0]+' -ss '+starttime+' -t '+durationtime+' -vn -ab 1024 -ar 1000 tmp/quiet.wav',capture_output=True)
+        fs, rdata = wavfile.read('./tmp/quiet.wav')
+        rdata = np.abs(rdata)
+        newsoundlimit = np.mean(rdata)
+        soundlimit = min(soundlimit, int(newsoundlimit))
+
     count = 1
     for vidname in vidlist:
         starttime = time.time()
         print("Processing video "+str(count)+"/"+str(len(vidlist)))
+        print("-Preprocessing started")
+
+        Preprocess(vidname, PPthreshold, PPlimit)
+
         #print("Speeding up video")
         #subprocess.run('ffmpeg -i input/'+str(vidname)+' -vf "setpts='+str(1.0/speedup)+'*PTS" -filter:a "atempo='+str(speedup)+'" -preset ultrafast tmp/tmp.mp4',capture_output=True)
         #vidpathname = "tmp/tmp.mp4"
-        vidpathname = "input/"+vidname
+        vidpathname = "tmp/preprocessed.mp4"
         duration, totalframes, fps = getVidInfo(str(vidpathname))
         subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 tmp/audio.wav',capture_output=True)
         ss, data = wavfile.read('./tmp/audio.wav')
         data = np.abs(data)
         limit = int(soundlimit)
-        threshold = int(round(realthreshold*ss))
         print("--Limit is: "+str(limit))
 
         print("--Analyzing")
-        threshold = 50
-        thresholdlimit = 150
+        currentthreshold = threshold
+        currentthresholdlimit = thresholdlimit
         bestTH = 0
         bestP = 0.0
         bestCutlist = []
         bufferduration = round(ss)*minduration
 
-        while(threshold <= thresholdlimit):
-            print("----"+str(round(threshold/thresholdlimit*100)) + " %")
+        while(currentthreshold <= currentthresholdlimit):
+            print("----"+str(round(currentthreshold/currentthresholdlimit*100)) + " %")
 
-            cutlist = findthreshold(bufferduration, limit, offset, data, threshold, ss)
+            cutlist = findthreshold(bufferduration, limit, offset, data, currentthreshold, ss, 1)
                 
             a = perachieved(cutlist, duration)*100
             if a > bestP:
                 bestP = a
-                bestTH = threshold
+                bestTH = currentthreshold
                 bestCutlist = cutlist
-                if threshold >= thresholdlimit:
-                    thresholdlimit += 40
-            threshold += 10
+                if currentthreshold >= currentthresholdlimit:
+                    currentthresholdlimit += 40
+            currentthreshold += 10
 
         cutlist = bestCutlist
-        threshold = bestTH
+        currentthreshold = bestTH
 
         print("--Number of cuts to be made is: "+str(len(cutlist)))
         print("--Video will be "+str(perachieved(cutlist, duration)*100)+" percent shorter.")
-        print("--Threshold is: " + str(threshold))
+        print("--Threshold is: " + str(currentthreshold))
         print("--Cutting")
         x = 0
         while x < len(cutlist):
             split = "ffmpeg -i "+str(vidpathname)
             print("----"+str(round(x/len(cutlist)*100)) + " %")
             while x < len(cutlist) and len(split) < commandlinelength:                                                                          #TODO3: Test if this works
-                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast -c:a aac -b:a 48k tmp/splits/"+str(x)+".mp4"
+                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast tmp/splits/"+str(x)+".mp4"
                 x = x + 1
             subprocess.run(split,capture_output=True)
 
