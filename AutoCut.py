@@ -20,7 +20,7 @@ def PrepareDirectories(workpath, inputpath, outputpath):
         os.makedirs(inputpath)
     
     if not os.path.exists(outputpath):
-        os.makedirs(inputpath)
+        os.makedirs(outputpath)
 
 def cleanInfo(input_str):       #cleans output string of unwanted information
     result = "" 
