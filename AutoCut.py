@@ -87,7 +87,6 @@ if __name__ == "__main__":
     minduration = 2
     soundlimit = 70
     commandlinelength = 5000
-    threadcount = multiprocessing.cpu_count()
     speedup = 1.6
 
     workpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\tmp'
