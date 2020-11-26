@@ -145,3 +145,5 @@ for vidname in vidlist:
     PrepareDirectories(workpath, inputpath, outputpath)
     count += 1
     print("This file took "+str(time.time()-starttime)+" seconds to finish.")
+print("Finished processing")
+input("Press key to exit")
