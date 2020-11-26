@@ -19,7 +19,6 @@ Script to analyze quiet parts in Videos and automatically edit them out. Useful 
   * Splitting process can take a long time and slows down the further we are in the video, reason is guessed to be ffmpeg related
 
 ## TODO:
-  * Add preprocessing first pass, might aleviate long splitting process a little
   * Add comments
   * Add optional Speedup of video
   * Add multithreading to analyzing method
