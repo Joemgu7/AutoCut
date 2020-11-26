@@ -22,3 +22,5 @@ Script to analyze quiet parts in Videos and automatically edit them out. Useful 
   * Add preprocessing first pass, might aleviate long splitting process a little
   * Add comments
   * Add optional Speedup of video
+  * Add multithreading to analyzing method
+  * Add optional limit analyzing with variance of concrete videosplit
