@@ -148,7 +148,7 @@ for vidname in vidlist:
         split = "ffmpeg -i "+str(vidpathname)
         print("----"+str(round(x/len(cutlist)*100)) + " %")
         while x < len(cutlist) and len(split) < commandlinelength:                                                                          #TODO3: Test if this works
-            split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -preset ultrafast tmp/splits/"+str(x)+".mp4"    
+            split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -preset fast tmp/splits/"+str(x)+".mp4"    
             x = x + 1
         subprocess.run(split,capture_output=True)
 
