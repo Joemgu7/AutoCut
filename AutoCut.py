@@ -42,6 +42,27 @@ def perachieved(cutlist, originallength):       #function to calculate actual pe
 
     return difference/originallength
 
+def gettime(totalseconds):
+    result = ""
+    if totalseconds/3600 >= 1:
+        hours = 0
+        while(totalseconds/3600 >= 1):
+            totalseconds -= 3600
+            hours += 1
+        result += str(hours)+" hours "
+    
+    if totalseconds/60 >= 1:
+        minutes = 0
+        while(totalseconds/60 >= 1):
+            totalseconds -= 60
+            minutes += 1
+        result += str(minutes)+" minutes "
+    
+    result += str(totalseconds)+" seconds"
+    return result
+        
+
+
 PPthresh, PPlimit = 2, 20       #Preprocessing threshold and limit
 offset = 0 #offset of rms limit
 realthreshold = 0 #lower => more aggressive cutting
@@ -144,6 +165,6 @@ for vidname in vidlist:
     print("--Cleaning up directory...")
     PrepareDirectories(workpath, inputpath, outputpath)
     count += 1
-    print("This file took "+str(time.time()-starttime)+" seconds to finish.")
+    print("This file took "+gettime(time.time()-starttime)+" to finish.")
 print("Finished processing")
 input("Press key to exit")
