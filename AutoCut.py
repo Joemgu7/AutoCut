@@ -1,3 +1,9 @@
+#Jonas Briguet 26.11.2020
+#Script to analyze quiet parts in Videos and automatically edit them out.
+#Used dependencies are ffmpeg, wave, numpy, wavfile
+#input folder is needed with input files, biggest feature of new version is bulk video processing
+
+
 import subprocess
 import wave
 import numpy as np
@@ -7,7 +13,7 @@ import pathlib
 import shutil
 import time
 
-def PrepareDirectories(workpath, inputpath, outputpath):
+def PrepareDirectories(workpath, inputpath, outputpath):            #sets up needed directories
     if os.path.exists(workpath):
         shutil.rmtree(workpath)
         os.makedirs(workpath)
@@ -44,7 +50,7 @@ def perachieved(cutlist, originallength):       #function to calculate actual pe
 
     return difference/originallength
 
-def gettime(totalseconds):
+def gettime(totalseconds):                          #function to convert seconds into a more readable format
     result = ""
     if totalseconds/3600 >= 1:
         hours = 0
@@ -63,18 +69,18 @@ def gettime(totalseconds):
     result += str(round(totalseconds))+" seconds"
     return result
 
-def findthreshold(bufferduration, limit, offset, data, threshold, ss, step):
+def findthreshold(bufferduration, limit, data, threshold, ss, step):            #function to determine the best possible threshold
     start = 0
     end = 0
     cutlist = []
     
     while start < len(data) - bufferduration - 10:
-        if np.mean(data[start:start+10]) < limit + offset:
+        if np.mean(data[start:start+10]) < limit:
             start = start + 1
             end = start
         else:
             end = start + bufferduration
-            while end + threshold < len(data) and np.mean(data[end:end+threshold]) > limit + offset:
+            while end + threshold < len(data) and np.mean(data[end:end+threshold]) > limit:
                 end = end + step
             cutlist.append([start/ss,(end+threshold)/ss])
             end = end + threshold + 1
@@ -82,13 +88,14 @@ def findthreshold(bufferduration, limit, offset, data, threshold, ss, step):
 
     return cutlist
 
-def Preprocess(vidname, PPthreshold, PPlimit):
+def Preprocess(vidname, PPthreshold, PPlimit, duration):                                          #function to preprocess input, speeds up later video-editing
     vidpathname = "input/"+vidname
     duration, totalframes, fps = getVidInfo(str(vidpathname))
     subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 tmp/ppaudio.wav',capture_output=True)
     ss, data = wavfile.read('./tmp/ppaudio.wav')
     data = np.abs(data)
     limit = PPlimit
+    duration, totalframes, fps = getVidInfo(str(vidpathname))
     print("--Limit is: "+str(limit))
 
     print("--Analyzing")
@@ -96,6 +103,7 @@ def Preprocess(vidname, PPthreshold, PPlimit):
 
     cutlist = findthreshold(bufferduration, limit, offset, data, PPthreshold, ss, 10)
 
+    if(perachieved(cutlist, duration))
     print("--Number of cuts to be made is: "+str(len(cutlist)))
     print("--Video will be "+str(perachieved(cutlist, duration)*100)+" percent shorter.")
     print("--Threshold is: " + str(PPthreshold))
@@ -120,27 +128,26 @@ def Preprocess(vidname, PPthreshold, PPlimit):
 
 if __name__ == "__main__":
     
-    offset = 0 #offset of rms limit
-    minduration = 2
-    soundlimit = 150
-    commandlinelength = 5000
-    speedup = 1.6
-    threshold = 30
-    thresholdlimit = 120
-    PPthreshold, PPlimit, PPminduration = 3000, soundlimit/2, 5       #Preprocessing threshold and limit
-    Analyzeloud = False
+    minduration = 1                     #minimal duration of split in seconds
+    soundlimit = 150                    #if higher than this value, spoken words are detected
+    commandlinelength = 6000            
+    speedup = 1.6                       #optional speedup, not yet implemented
+    threshold = 10                      #starting threshold, from which it is analyzed upwards
+    thresholdlimit = 120                #highest limit
+    PPthreshold, PPlimit, PPminduration = 2000, soundlimit/2, 3       #Preprocessing threshold and limit
+    Analyzeloud = False                 #determine if manual calibration on spoken segments
 
     workpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\tmp'
     inputpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\input'
     outputpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\output'
 
-    PrepareDirectories(workpath, inputpath, outputpath)
+    PrepareDirectories(workpath, inputpath, outputpath, duration)
 
     vidlist = []
     for (dirpath, dirnames, filenames) in os.walk(inputpath):
         vidlist.extend(filenames)
 
-    if(Analyzeloud):
+    if(Analyzeloud):                    #automatic calibration on loud videosegments
         print(vidlist[0])
         starttime = input("Start of spoken part(HH:MM:SS.ms): ")
         durationtime = input("Duration of spoken part(in seconds): ")
@@ -163,13 +170,13 @@ if __name__ == "__main__":
         #vidpathname = "tmp/tmp.mp4"
         vidpathname = "tmp/preprocessed.mp4"
         duration, totalframes, fps = getVidInfo(str(vidpathname))
-        subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 tmp/audio.wav',capture_output=True)
+        subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 tmp/audio.wav',capture_output=True)            #extract audio needed for analysis, normalize
         ss, data = wavfile.read('./tmp/audio.wav')
         data = np.abs(data)
         limit = int(soundlimit)
         print("--Limit is: "+str(limit))
 
-        print("--Analyzing")
+        print("--Analyzing")                                                                                            #find best fitting threshold
         currentthreshold = threshold
         currentthresholdlimit = thresholdlimit
         bestTH = 0
@@ -180,7 +187,7 @@ if __name__ == "__main__":
         while(currentthreshold <= currentthresholdlimit):
             print("----"+str(round(currentthreshold/currentthresholdlimit*100)) + " %")
 
-            cutlist = findthreshold(bufferduration, limit, offset, data, currentthreshold, ss, 1)
+            cutlist = findthreshold(bufferduration, limit, data, currentthreshold, ss, 1)
                 
             a = perachieved(cutlist, duration)*100
             if a > bestP:
@@ -194,7 +201,7 @@ if __name__ == "__main__":
         cutlist = bestCutlist
         currentthreshold = bestTH
 
-        print("--Number of cuts to be made is: "+str(len(cutlist)))
+        print("--Number of cuts to be made is: "+str(len(cutlist)))                                         #create splits using previously computed list of splits
         print("--Video will be "+str(perachieved(cutlist, duration)*100)+" percent shorter.")
         print("--Threshold is: " + str(currentthreshold))
         print("--Cutting")
@@ -213,7 +220,7 @@ if __name__ == "__main__":
                 cliplist.write("file '"+str(pathlib.Path(__file__).parent.absolute())+"\\tmp\\splits\\"+str(i)+".mp4'\n")
             cliplist.close()
 
-        print("--Merging...")
+        print("--Merging...")                                                                                   #merge created splits
         subprocess.run("ffmpeg -f concat -safe 0 -i "+str(workpath)+"\cliplist.txt -c copy output/"+str(vidname), capture_output=True)
 
         print("--Cleaning up directory...")
