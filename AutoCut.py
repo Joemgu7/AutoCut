@@ -68,6 +68,7 @@ offset = 0 #offset of rms limit
 realthreshold = 0 #lower => more aggressive cutting
 minduration = 2
 soundlimit = 60
+commandlinelength = 5000
 speedup = 1.6
 
 workpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\tmp'
@@ -145,12 +146,10 @@ for vidname in vidlist:
     x = 0
     while x < len(cutlist):
         split = "ffmpeg -i "+str(vidpathname)
-        y = 0
         print("----"+str(round(x/len(cutlist)*100)) + " %")
-        while x < len(cutlist) and len(split) < 4000:                                                                          #TODO3: Test if this works
+        while x < len(cutlist) and len(split) < commandlinelength:                                                                          #TODO3: Test if this works
             split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -preset ultrafast tmp/splits/"+str(x)+".mp4"    
             x = x + 1
-            y = y + 1
         subprocess.run(split,capture_output=True)
 
     f = os.listdir("tmp/splits")
