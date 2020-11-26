@@ -6,9 +6,6 @@ import os
 import pathlib
 import shutil
 import time
-import multiprocessing
-from multiprocessing.pool import ThreadPool
-
 
 def PrepareDirectories(workpath, inputpath, outputpath):
     if os.path.exists(workpath):
