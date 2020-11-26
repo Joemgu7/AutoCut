@@ -88,9 +88,8 @@ def findthreshold(bufferduration, limit, data, threshold, ss, step):            
 
     return cutlist
 
-def Preprocess(vidname, PPthreshold, PPlimit, duration):                                          #function to preprocess input, speeds up later video-editing
+def Preprocess(vidname, PPthreshold, PPlimit):                                          #function to preprocess input, speeds up later video-editing
     vidpathname = "input/"+vidname
-    duration, totalframes, fps = getVidInfo(str(vidpathname))
     subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 tmp/ppaudio.wav',capture_output=True)
     ss, data = wavfile.read('./tmp/ppaudio.wav')
     data = np.abs(data)
@@ -101,30 +100,33 @@ def Preprocess(vidname, PPthreshold, PPlimit, duration):                        
     print("--Analyzing")
     bufferduration = round(ss)*minduration
 
-    cutlist = findthreshold(bufferduration, limit, offset, data, PPthreshold, ss, 10)
+    cutlist = findthreshold(bufferduration, limit, data, PPthreshold, ss, 10)
 
-    if(perachieved(cutlist, duration))
-    print("--Number of cuts to be made is: "+str(len(cutlist)))
-    print("--Video will be "+str(perachieved(cutlist, duration)*100)+" percent shorter.")
-    print("--Threshold is: " + str(PPthreshold))
-    print("--Cutting")
-    x = 0
-    while x < len(cutlist):
-        split = "ffmpeg -i "+str(vidpathname)
-        print("----"+str(round(x/len(cutlist)*100)) + " %")
-        while x < len(cutlist) and len(split) < commandlinelength:                                                                          
-            split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast tmp/ppsplits/"+str(x)+".mp4"
-            x = x + 1
-        subprocess.run(split,capture_output=True)
+    if(perachieved(cutlist, duration) < 8):
+        shutil.copy(vidpathname, "tmp/")
+        os.rename("tmp/"+vidname, "tmp/preprocessed.mp4")
+    else:
+        print("--Number of cuts to be made is: "+str(len(cutlist)))
+        print("--Video will be "+str(perachieved(cutlist, duration)*100)+" percent shorter.")
+        print("--Threshold is: " + str(PPthreshold))
+        print("--Cutting")
+        x = 0
+        while x < len(cutlist):
+            split = "ffmpeg -i "+str(vidpathname)
+            print("----"+str(round(x/len(cutlist)*100)) + " %")
+            while x < len(cutlist) and len(split) < commandlinelength:                                                                          
+                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast tmp/ppsplits/"+str(x)+".mp4"
+                x = x + 1
+            subprocess.run(split,capture_output=True)
 
-    f = os.listdir("tmp/ppsplits")
-    with open(str(workpath)+"/ppcliplist.txt", "w") as cliplist:
-        for i in range(0, len(f)):
-            cliplist.write("file '"+str(pathlib.Path(__file__).parent.absolute())+"\\tmp\\ppsplits\\"+str(i)+".mp4'\n")
-        cliplist.close()
+        f = os.listdir("tmp/ppsplits")
+        with open(str(workpath)+"/ppcliplist.txt", "w") as cliplist:
+            for i in range(0, len(f)):
+                cliplist.write("file '"+str(pathlib.Path(__file__).parent.absolute())+"\\tmp\\ppsplits\\"+str(i)+".mp4'\n")
+            cliplist.close()
 
-    print("--Merging...")
-    subprocess.run("ffmpeg -f concat -safe 0 -i "+str(workpath)+"\ppcliplist.txt -c copy tmp/preprocessed.mp4", capture_output=True)
+        print("--Merging...")
+        subprocess.run("ffmpeg -f concat -safe 0 -i "+str(workpath)+"\ppcliplist.txt -c copy tmp/preprocessed.mp4", capture_output=True)
 
 if __name__ == "__main__":
     
@@ -141,7 +143,7 @@ if __name__ == "__main__":
     inputpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\input'
     outputpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\output'
 
-    PrepareDirectories(workpath, inputpath, outputpath, duration)
+    PrepareDirectories(workpath, inputpath, outputpath)
 
     vidlist = []
     for (dirpath, dirnames, filenames) in os.walk(inputpath):
