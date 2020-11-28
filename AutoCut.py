@@ -131,10 +131,10 @@ def Preprocess(vidname, PPthreshold, PPlimit):                                  
 if __name__ == "__main__":
     
     minduration = 1                     #minimal duration of split in seconds
-    soundlimit = 150                    #if higher than this value, spoken words are detected
-    commandlinelength = 6000            
+    soundlimit = 80                    #if higher than this value, spoken words are detected
+    commandlinelength = 10000            
     speedup = 1.6                       #optional speedup, not yet implemented
-    threshold = 10                      #starting threshold, from which it is analyzed upwards
+    threshold = 50                      #starting threshold, from which it is analyzed upwards
     thresholdlimit = 120                #highest limit
     PPthreshold, PPlimit, PPminduration = 2000, soundlimit/2, 3       #Preprocessing threshold and limit
     Analyzeloud = False                 #determine if manual calibration on spoken segments
@@ -208,13 +208,20 @@ if __name__ == "__main__":
         print("--Threshold is: " + str(currentthreshold))
         print("--Cutting")
         x = 0
+        splitlist = []
         while x < len(cutlist):
             split = "ffmpeg -i "+str(vidpathname)
-            print("----"+str(round(x/len(cutlist)*100)) + " %")
-            while x < len(cutlist) and len(split) < commandlinelength:                                                                          #TODO3: Test if this works
+            
+            while x < len(cutlist) and len(split) < commandlinelength:
                 split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast tmp/splits/"+str(x)+".mp4"
                 x = x + 1
+            splitlist.append(split)
+
+        i=0
+        for split in splitlist:
+            print("----"+str(round(i/len(splitlist)*100)) + " %")
             subprocess.run(split,capture_output=True)
+            i += 1
 
         f = os.listdir("tmp/splits")
         with open(str(workpath)+"/cliplist.txt", "w") as cliplist:
