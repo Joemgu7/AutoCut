@@ -104,8 +104,7 @@ def Preprocess(vidname, PPthreshold, PPlimit):                                  
 
     if(perachieved(cutlist, duration) < 8):
         print("--Skipping preprocessing")
-        shutil.copy(vidpathname, "tmp/")
-        subprocess.run("ffmpeg -i tmp/"+vidname+" -crf 30 -preset ultrafast -af afftdn tmp/preprocessed.mp4", capture_output=True)
+        subprocess.run("ffmpeg -i "+vidpathname+" -crf 30 -preset ultrafast -af afftdn tmp/preprocessed.mp4", capture_output=True)
     else:
         print("--Number of cuts to be made is: "+str(len(cutlist)))
         print("--Video will be "+str(perachieved(cutlist, duration)*100)+" percent shorter.")
@@ -173,8 +172,9 @@ if __name__ == "__main__":
         print("Processing video "+str(count)+"/"+str(len(vidlist)))
         print("-Preprocessing started")
 
+        pptime = time.time()
         Preprocess(vidname, PPthreshold, PPlimit)
-
+        print("-Preprocessing took "+gettime(time.time()-pptime))
         #print("Speeding up video")
         #subprocess.run('ffmpeg -i input/'+str(vidname)+' -vf "setpts='+str(1.0/speedup)+'*PTS" -filter:a "atempo='+str(speedup)+'" -preset ultrafast tmp/tmp.mp4',capture_output=True)
         #vidpathname = "tmp/tmp.mp4"
@@ -225,14 +225,18 @@ if __name__ == "__main__":
                 x = x + 1
             splitlist.append(split)
 
-        i=0
+        i = 0
+        perlimit = 0
         splitstart = time.time()                                                                            #added time taken for one batch
         splitend = time.time()
         for split in splitlist:
-            print("----"+str(round(i/len(splitlist)*100)) + "% ("+gettime(splitend-splitstart)+")")
-            splitstart = time.time()
+            percentage = round(i/len(splitlist)*100)
+            if(perlimit < percentage):
+                perlimit = percentage + 10
+                splitend = time.time()
+                print("----"+str(percentage) + "% ("+gettime(splitend-splitstart)+")")
+                splitstart = time.time()
             subprocess.run(split,capture_output=True)
-            splitend = time.time()
             i += 1
 
         f = os.listdir("tmp/splits")
