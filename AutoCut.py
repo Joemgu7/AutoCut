@@ -102,7 +102,7 @@ def Preprocess(vidname, PPthreshold, PPlimit):                                  
 
     cutlist = findthreshold(bufferduration, limit, data, PPthreshold, ss, 10)
 
-    if(perachieved(cutlist, duration) < 8):
+    if(perachieved(cutlist, duration)*100 < 8):
         print("--Skipping preprocessing")
         subprocess.run("ffmpeg -i "+vidpathname+" -crf 30 -preset ultrafast -af afftdn tmp/preprocessed.mp4", capture_output=True)
     else:
