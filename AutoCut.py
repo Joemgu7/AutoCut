@@ -90,7 +90,8 @@ def findthreshold(bufferduration, limit, data, threshold, ss, step):            
 
 def Preprocess(vidname, PPthreshold, PPlimit):                                          #function to preprocess input, speeds up later video-editing
     vidpathname = "input/"+vidname
-    subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 -af afftdn tmp/ppaudio.wav',capture_output=True)
+    subprocess.run("ffmpeg -i "+vidpathname+" -crf 30 -preset ultrafast -af afftdn tmp/preprocessed.mp4", capture_output=True)
+    subprocess.run("ffmpeg -i tmp/preprocessed.mp4 -vn -ab 1024 -ar 1000 tmp/ppaudio.wav",capture_output=True)
     ss, data = wavfile.read('./tmp/ppaudio.wav')
     data = np.abs(data)
     limit = PPlimit
@@ -102,7 +103,9 @@ def Preprocess(vidname, PPthreshold, PPlimit):                                  
 
     cutlist = findthreshold(bufferduration, limit, data, PPthreshold, ss, 10)
 
-    if(perachieved(cutlist, duration)*100 < 8):
+    if(True):
+        print("--Skipping preprocessing")
+    elif(True or perachieved(cutlist, duration)*100 < 15):
         print("--Skipping preprocessing")
         subprocess.run("ffmpeg -i "+vidpathname+" -crf 30 -preset ultrafast -af afftdn tmp/preprocessed.mp4", capture_output=True)
     else:
