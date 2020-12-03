@@ -252,7 +252,7 @@ if __name__ == "__main__":
                 for i in range(int(percentage), 101):
                     predictedtime += int(model.predict([[i]]))
                 print("----ETA: "+gettime(predictedtime))
-                print("----"+percentage+"%")
+                print("----"+str(percentage)+"%")
 
         f = os.listdir("tmp/splits")
         with open(str(workpath)+"/cliplist.txt", "w") as cliplist:
