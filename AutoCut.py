@@ -233,8 +233,8 @@ if __name__ == "__main__":
         perlimit = 0
         #added predicted ETA
         
-        XPhistory = [0.0]
-        YThistory = [0.0]
+        XPhistory = []
+        YThistory = []
         for split in splitlist:
             splitstart = time.time()
             subprocess.run(split,capture_output=True)
@@ -243,14 +243,17 @@ if __name__ == "__main__":
             splitend = time.time()
             XPhistory.append(percentage)
             YThistory.append(splitend-splitstart)
-            if(len(XPhistory) > 1 and len(XPhistory) % 3 == 0):
+            if(len(XPhistory) > 1 and len(XPhistory) % 4 == 0):
+                step = XPhistory[1]-XPhistory[0]
                 XP = np.array(XPhistory, 'float')
                 YT = np.array(YThistory, 'float')
                 XP = np.reshape(XP, (-1, 1))
                 model = LinearRegression().fit(XP, YT)
                 predictedtime = 0
-                for per in range(int(percentage), 101):
+                per = percentage
+                while(per < 101):
                     predictedtime += int(model.predict([[per]]))
+                    per += step
                 print("----ETA: "+gettime(predictedtime))
                 print("----"+str(percentage)+"%")
 
