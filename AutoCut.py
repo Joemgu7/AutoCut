@@ -249,8 +249,8 @@ if __name__ == "__main__":
                 XP = np.reshape(XP, (-1, 1))
                 model = LinearRegression().fit(XP, YT)
                 predictedtime = 0
-                for i in range(int(percentage), 101):
-                    predictedtime += int(model.predict([[i]]))
+                for per in range(int(percentage), 101):
+                    predictedtime += int(model.predict([[per]]))
                 print("----ETA: "+gettime(predictedtime))
                 print("----"+str(percentage)+"%")
 
