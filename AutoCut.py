@@ -1,12 +1,13 @@
 #Jonas Briguet 26.11.2020
 #Script to analyze quiet parts in Videos and automatically edit them out.
-#Used dependencies are ffmpeg, wave, numpy, wavfile
+#Used dependencies are ffmpeg, wave, numpy, scipy
 #input folder is needed with input files, biggest feature of new version is bulk video processing
 
 
 import subprocess
 import wave
 import numpy as np
+from sklearn.linear_model import LinearRegression
 from scipy.io import wavfile
 import os
 import pathlib
@@ -230,17 +231,28 @@ if __name__ == "__main__":
 
         i = 0
         perlimit = 0
-        splitstart = time.time()                                                                            #added time taken for one batch
-        splitend = time.time()
+        #added predicted ETA
+        
+        XPhistory = [0.0]
+        YThistory = [0.0]
         for split in splitlist:
-            percentage = round(i/len(splitlist)*100)
-            if(perlimit < percentage):
-                perlimit = percentage + 10
-                splitend = time.time()
-                print("----"+str(percentage) + "% ("+gettime(splitend-splitstart)+")")
-                splitstart = time.time()
+            splitstart = time.time()
             subprocess.run(split,capture_output=True)
             i += 1
+            percentage = round(i/len(splitlist)*100)
+            splitend = time.time()
+            XPhistory.append(percentage)
+            YThistory.append(splitend-splitstart)
+            if(len(XPhistory) > 1 and len(XPhistory) % 3 == 0):
+                XP = np.array(XPhistory, 'float')
+                YT = np.array(YThistory, 'float')
+                XP = np.reshape(XP, (-1, 1))
+                model = LinearRegression().fit(XP, YT)
+                predictedtime = 0
+                for i in range(int(percentage), 101):
+                    predictedtime += int(model.predict([[i]]))
+                print("----ETA: "+gettime(predictedtime))
+                print("----"+percentage+"%")
 
         f = os.listdir("tmp/splits")
         with open(str(workpath)+"/cliplist.txt", "w") as cliplist:
