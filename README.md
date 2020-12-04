@@ -8,7 +8,7 @@ Script to analyze quiet parts in Videos and automatically edit them out. Useful 
   * Automatically optimizes for best threshold (lower limit configurable)
   * Little to none Audio Clipping
 
-## Dependencies: 
+## Dependencies 
   * ffmpeg installed on machine
   * libraries: subprocess, wave, numpy, scipy.io wavfile, os, pathlib, shutil, scikit-learn
 
@@ -19,12 +19,12 @@ Script to analyze quiet parts in Videos and automatically edit them out. Useful 
   * ???
   * Profit
 
-## Configurable:
+## Configurables
   * soundlimit: defines at which threshold speech is detected (higher = more aggressive cutting)
   * minduration: minimal duration in seconds of splits (higher -> less splits and more performance, but less silent parts cut out, consider reducing if on mobile)
   * change render preset from ultrafast to fast or slow for better file compression, but slows down rendering
   
-## Known Bugs:
+## Known Bugs
   * Be careful not to pause ffmpeg by accident while executing
 
 ## TODO:
