@@ -8,6 +8,7 @@ import subprocess
 import wave
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from scipy.io import wavfile
 import os
 import pathlib
@@ -248,11 +249,16 @@ if __name__ == "__main__":
                 XP = np.array(XPhistory, 'float')
                 YT = np.array(YThistory, 'float')
                 XP = np.reshape(XP, (-1, 1))
-                model = LinearRegression().fit(XP, YT)
+
+                poly = PolynomialFeatures(degree=2)
+                XP_ = poly.fit_transform(XP)
+                model = LinearRegression().fit(XP_, YT)
+                
                 predictedtime = 0
                 per = percentage
                 while(per < 101):
-                    predictedtime += int(model.predict([[per]]))
+                    predict_ = poly.fit_transform([[per]])
+                    predictedtime += int(model.predict(predict_))
                     per += step
                 print("----ETA: "+gettime(predictedtime))
                 print("----"+str(percentage)+"%")
