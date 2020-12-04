@@ -1,7 +1,7 @@
 # AutoCut
 Script to analyze quiet parts in Videos and automatically edit them out. Useful for shortening lectures where the professor does a lot of thinking pauses without saying anything :)
 
-##Features
+## Features
   * Automatic denoising of audio using ffmpeg and FFT
   * Calculates how much time is saved for each video
   * Bulk Video Processing
