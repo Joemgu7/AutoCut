@@ -6,7 +6,7 @@ Script to analyze quiet parts in Videos and automatically edit them out. Useful 
   * Calculates how much time is saved for each video
   * Bulk Video Processing
   * Automatically optimizes for best threshold (lower limit configurable)
-  * Little to none Audio Clipping
+  * Little to no Audio Clipping
 
 ## Dependencies 
   * ffmpeg installed on machine
