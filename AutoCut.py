@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     for vid in files:                                   #added filename conversion: does this work?
         newname = vid
-        newname.replace(" ", "-")
+        newname = newname.replace(" ", "-")
         os.rename(inputpath+"/"+vid, inputpath+"/"+newname)
         vidlist.append(newname)
 
