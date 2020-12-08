@@ -187,7 +187,7 @@ if __name__ == "__main__":
             split = "ffmpeg -i "+str(vidpathname)
             
             while x < len(cutlist) and len(split) < commandlinelength:
-                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -c:v h264_qsv -preset fast tmp/splits/"+str(x)+".mp4"
+                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast tmp/splits/"+str(x)+".mp4"
                 x = x + 1
             splitlist.append(split)
 
