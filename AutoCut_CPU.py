@@ -93,7 +93,6 @@ def findthreshold(bufferduration, limit, data, threshold, ss, step):            
 def Preprocess(vidname, PPthreshold, PPlimit):                                          #function to preprocess input, speeds up later video-editing
     vidpathname = "input/"+vidname
     subprocess.run("ffmpeg -i "+vidpathname+" -crf 30 -preset ultrafast -af afftdn tmp/preprocessed.mp4", capture_output=True)
-    print("--Skipping preprocessing")
     
 if __name__ == "__main__":
     
@@ -202,7 +201,7 @@ if __name__ == "__main__":
             splitstart = time.time()
             subprocess.run(split,capture_output=True)
             i += 1
-            percentage = round(i/len(splitlist)*100)
+            percentage = i/len(splitlist)*100
             splitend = time.time()
             XPhistory.append(percentage)
             YThistory.append(splitend-splitstart)
@@ -232,7 +231,7 @@ if __name__ == "__main__":
             cliplist.close()
 
         print("--Merging...")                                                                                   #merge created splits
-        subprocess.run("ffmpeg -f concat -safe 0 -i "+str(workpath)+"\cliplist.txt -c copy output/"+str(vidname), capture_output=True)
+        subprocess.run("ffmpeg -f concat -safe 0 -i "+str(workpath)+"\cliplist.txt -c copy output/"+str(vidname), capture_output=False)
 
         print("--Cleaning up directory...")
         PrepareDirectories(workpath, inputpath, outputpath)

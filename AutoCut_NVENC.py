@@ -92,7 +92,7 @@ def findthreshold(bufferduration, limit, data, threshold, ss, step):            
 
 def Preprocess(vidname, PPthreshold, PPlimit):                                          #function to preprocess input, speeds up later video-editing
     vidpathname = "input/"+vidname
-    subprocess.run("ffmpeg -i "+vidpathname+" -c:v h264_nvenc -af afftdn tmp/preprocessed.mp4", capture_output=True)
+    subprocess.run("ffmpeg -i "+vidpathname+" -c:v h264_nvenc -preset fast -af afftdn tmp/preprocessed.mp4", capture_output=True)
 
 if __name__ == "__main__":
     
@@ -185,9 +185,8 @@ if __name__ == "__main__":
         splitlist = []
         while x < len(cutlist):
             split = "ffmpeg -i "+str(vidpathname)
-            
             while x < len(cutlist) and len(split) < commandlinelength:
-                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -c:v h264_nvenc tmp/splits/"+str(x)+".mp4"
+                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -crf 30 -preset ultrafast tmp/splits/"+str(x)+".mp4"
                 x = x + 1
             splitlist.append(split)
 
@@ -201,11 +200,11 @@ if __name__ == "__main__":
             splitstart = time.time()
             subprocess.run(split,capture_output=True)
             i += 1
-            percentage = round(i/len(splitlist)*100)
+            percentage = i/len(splitlist)*100
             splitend = time.time()
             XPhistory.append(percentage)
             YThistory.append(splitend-splitstart)
-            if(len(XPhistory) > 1 and len(XPhistory) % 4 == 0):
+            if(len(XPhistory) > 1 and len(XPhistory) % 9 == 0):
                 step = XPhistory[1]-XPhistory[0]
                 XP = np.array(XPhistory, 'float')
                 YT = np.array(YThistory, 'float')

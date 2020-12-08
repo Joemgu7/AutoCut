@@ -92,7 +92,7 @@ def findthreshold(bufferduration, limit, data, threshold, ss, step):            
 
 def Preprocess(vidname, PPthreshold, PPlimit):                                          #function to preprocess input, speeds up later video-editing
     vidpathname = "input/"+vidname
-    subprocess.run("ffmpeg -i "+vidpathname+" -c:v h264_qsv -af afftdn tmp/preprocessed.mp4", capture_output=True)
+    subprocess.run("ffmpeg -i "+vidpathname+" -c:v h264_qsv -preset fast -af afftdn tmp/preprocessed.mp4", capture_output=True)
 
 if __name__ == "__main__":
     
@@ -187,7 +187,7 @@ if __name__ == "__main__":
             split = "ffmpeg -i "+str(vidpathname)
             
             while x < len(cutlist) and len(split) < commandlinelength:
-                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -c:v h264_qsv tmp/splits/"+str(x)+".mp4"
+                split += " -ss "+str(cutlist[x][0])+" -t "+str(cutlist[x][1]-cutlist[x][0])+" -c:v h264_qsv -preset fast tmp/splits/"+str(x)+".mp4"
                 x = x + 1
             splitlist.append(split)
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
             splitstart = time.time()
             subprocess.run(split,capture_output=True)
             i += 1
-            percentage = round(i/len(splitlist)*100)
+            percentage = i/len(splitlist)*100
             splitend = time.time()
             XPhistory.append(percentage)
             YThistory.append(splitend-splitstart)
