@@ -7,6 +7,8 @@ Script to analyze quiet parts in Videos and automatically edit them out. Useful 
   * Bulk Video Processing
   * Automatically optimizes for best threshold (lower limit configurable)
   * Little to no Audio Clipping
+  * Option to use Hardware acceleration (Nvidia, Intel QuickSync) for preprocessing of video.
+     * Nvidia recommended, if available, QSV might reduce load on CPU on mobile devices
 
 ## Dependencies 
   * ffmpeg installed on machine
