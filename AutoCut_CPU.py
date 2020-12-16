@@ -84,26 +84,41 @@ def findthreshold(bufferduration, limit, data, threshold, ss, step):            
             end = start + bufferduration
             while end + threshold < len(data) and np.mean(data[end:end+threshold]) > limit:
                 end = end + step
-            cutlist.append([start/ss,(end+threshold)/ss])
+            if(end + threshold >= len(data)):
+                cutlist.append([start,len(data)])
+            else:
+                cutlist.append([start,(end+threshold)])
             end = end + threshold + 1
             start = end
 
     return cutlist
 
-def Preprocess(vidname, PPthreshold, PPlimit):                                          #function to preprocess input, speeds up later video-editing
+def Preprocess(vidname):                                          #function to preprocess input, speeds up later video-editing
     vidpathname = "input/"+vidname
     subprocess.run("ffmpeg -i "+vidpathname+" -crf 30 -preset ultrafast -af afftdn tmp/preprocessed.mp4", capture_output=True)
-    
+
+def cleanuplist(cutlist, bridge):
+    count = 0
+    i = 0
+    while i < len(cutlist) - 1:
+        if(cutlist[i+1][0] - cutlist[i][1] <= bridge):
+            end = cutlist[i+1][1]
+            cutlist.pop(i+1)
+            cutlist[i][1] = end
+            count += 1
+        i += 1
+    print('------Removed '+str(count)+' from the list (CU).')
+    return cutlist
+
 if __name__ == "__main__":
     
     minduration = 1                     #minimal duration of split in seconds
     soundlimit = 80                    #if higher than this value, spoken words are detected
-    commandlinelength = 10000            
-    speedup = 1.6                       #optional speedup, not yet implemented
-    threshold = 50                      #starting threshold, from which it is analyzed upwards
+    commandlinelength = 10000
+    threshold = 10                      #starting threshold, from which it is analyzed upwards
     thresholdlimit = 80                #highest limit
-    PPthreshold, PPlimit, PPminduration = 2000, soundlimit/2, 5       #Preprocessing threshold and limit
-    Analyzeloud = False                 #determine if manual calibration on spoken segments
+    autothreshold = True
+    bridge = 40
 
     workpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\tmp'
     inputpath = str(pathlib.Path(__file__).parent.absolute()) + r'\\input'
@@ -122,16 +137,6 @@ if __name__ == "__main__":
         os.rename(inputpath+"/"+vid, inputpath+"/"+newname)
         vidlist.append(newname)
 
-    if(Analyzeloud):                    #automatic calibration on loud videosegments
-        print(vidlist[0])
-        starttime = input("Start of spoken part(HH:MM:SS.ms): ")
-        durationtime = input("Duration of spoken part(in seconds): ")
-        subprocess.run('ffmpeg -i input/'+vidlist[0]+' -ss '+starttime+' -t '+durationtime+' -vn -ab 1024 -ar 1000 tmp/quiet.wav',capture_output=True)
-        fs, rdata = wavfile.read('./tmp/quiet.wav')
-        rdata = np.abs(rdata)
-        newsoundlimit = np.mean(rdata)
-        soundlimit = min(soundlimit, int(newsoundlimit))
-
     count = 1
     for vidname in vidlist:
         starttime = time.time()
@@ -139,11 +144,8 @@ if __name__ == "__main__":
         print("-Preprocessing started")
 
         pptime = time.time()
-        Preprocess(vidname, PPthreshold, PPlimit)
+        Preprocess(vidname)
         print("-Preprocessing took "+gettime(time.time()-pptime))
-        #print("Speeding up video")
-        #subprocess.run('ffmpeg -i input/'+str(vidname)+' -vf "setpts='+str(1.0/speedup)+'*PTS" -filter:a "atempo='+str(speedup)+'" -preset ultrafast tmp/tmp.mp4',capture_output=True)
-        #vidpathname = "tmp/tmp.mp4"
         vidpathname = "tmp/preprocessed.mp4"
         duration, totalframes, fps = getVidInfo(str(vidpathname))
         subprocess.run('ffmpeg -i '+str(vidpathname)+' -vn -ab 1024 -ar 1000 -af afftdn tmp/audio.wav',capture_output=True)            #extract audio needed for analysis, normalize, added audio filtering
@@ -158,19 +160,22 @@ if __name__ == "__main__":
         bestTH = 0
         bestP = 0.0
         bestCutlist = []
-        bufferduration = round(ss)*minduration
+        bufferduration = round(round(ss)*minduration)
 
         while(currentthreshold <= currentthresholdlimit):
             print("----"+str(round(currentthreshold/currentthresholdlimit*100)) + " %")
 
             cutlist = findthreshold(bufferduration, limit, data, currentthreshold, ss, 1)
-                
+            cutlist = cleanuplist(cutlist, bridge)
+            cutlist = np.array(cutlist)
+            cutlist = cutlist/ss
+            cutlist = cutlist.tolist()
             a = perachieved(cutlist, duration)*100
             if a > bestP:
                 bestP = a
                 bestTH = currentthreshold
                 bestCutlist = cutlist
-                if currentthreshold >= currentthresholdlimit:
+                if currentthreshold >= currentthresholdlimit and autothreshold:
                     currentthresholdlimit += 40
             currentthreshold += 10
 
@@ -222,14 +227,13 @@ if __name__ == "__main__":
                     predictedtime += int(model.predict(predict_))
                     per += step
                 print("----ETA: "+gettime(predictedtime))
-                print("----"+str(percentage)+"%")
+                print("----"+str(round(percentage))+"%")
 
         f = os.listdir("tmp/splits")
         with open(str(workpath)+"/cliplist.txt", "w") as cliplist:
             for i in range(0, len(f)):
                 cliplist.write("file '"+str(pathlib.Path(__file__).parent.absolute())+"\\tmp\\splits\\"+str(i)+".mp4'\n")
             cliplist.close()
-
         print("--Merging...")                                                                                   #merge created splits
         subprocess.run("ffmpeg -f concat -safe 0 -i "+str(workpath)+"\cliplist.txt -c copy output/"+str(vidname), capture_output=False)
 
